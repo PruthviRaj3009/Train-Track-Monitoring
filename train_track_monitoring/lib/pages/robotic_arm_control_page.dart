@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:train_track_monitoring/pages/arm_control_panel.dart';
 import 'package:train_track_monitoring/pages/live_stream_view.dart';
 import 'package:train_track_monitoring/services/websocket_service.dart';
+import 'dart:developer';
 // import 'package:loginpage/pages/arm_control_panel.dart';
 // import 'package:loginpage/pages/live_stream_view.dart';
 // import 'package:loginpage/services/websocket_service.dart';
@@ -38,7 +39,7 @@ class _RoboticArmControlPageState extends State<RoboticArmControlPage> {
   void initState() {
     super.initState();
 
-    print('[ARM_CONTROL] Initializing robotic arm control page');
+    log('[ARM_CONTROL] Initializing robotic arm control page');
     // Retain reference to singleton WebSocket service
     _websocketService.retain();
 
@@ -55,7 +56,7 @@ class _RoboticArmControlPageState extends State<RoboticArmControlPage> {
 
   @override
   void dispose() {
-    print('[ARM_CONTROL] Disposing robotic arm control page');
+    log('[ARM_CONTROL] Disposing robotic arm control page');
     // Release reference (will only disconnect if no other pages using it)
     _websocketService.release();
     super.dispose();

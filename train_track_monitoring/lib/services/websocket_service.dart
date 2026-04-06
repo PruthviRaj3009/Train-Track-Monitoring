@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
+import 'dart:developer';
+//import 'package:flutter/foundation.dart';
 import 'package:train_track_monitoring/config/websocket_config.dart';
 import 'package:train_track_monitoring/models/robot_control_message.dart';
 import 'package:train_track_monitoring/models/robot_status_message.dart';
@@ -29,7 +29,7 @@ class WebSocketService {
 
   /// Private constructor for singleton pattern
   WebSocketService._internal() {
-    print('[WS_SINGLETON] WebSocketService singleton created');
+    log('[WS_SINGLETON] WebSocketService singleton created');
   }
 
   /// WebSocket connection URL (configured in websocket_config.dart)
@@ -69,14 +69,14 @@ class WebSocketService {
   /// ```
   Future<void> connect({String? url}) async {
     if (_isConnecting || isConnected) {
-      print('[WS_CONNECT] Already connected or connecting - skipping');
+      log('[WS_CONNECT] Already connected or connecting - skipping');
       return;
     }
 
     // Load saved IP if no URL provided
     if (url == null && _url == defaultUrl) {
       _url = await NetworkConfig.getWebSocketUrl();
-      print('[WS_CONNECT] Using saved IP from SharedPreferences: $_url');
+      log('[WS_CONNECT] Using saved IP from SharedPreferences: $_url');
     } else if (url != null) {
       _url = url;
     }
@@ -85,7 +85,7 @@ class WebSocketService {
     _shouldReconnect = true;
 
     try {
-      print('[WS_CONNECT] Attempting to connect to $_url');
+      log('[WS_CONNECT] Attempting to connect to $_url');
 
       _channel = WebSocketChannel.connect(Uri.parse(_url));
 
@@ -94,7 +94,7 @@ class WebSocketService {
 
       _isConnecting = false;
       _connectionController.add(true);
-      print('[WS_CONNECTED] WebSocket connected successfully to $_url');
+      log('[WS_CONNECTED] WebSocket connected successfully to $_url');
 
       // Listen to incoming messages
       _channel!.stream.listen(
@@ -107,9 +107,9 @@ class WebSocketService {
       _isConnecting = false;
       _channel = null;
       _connectionController.add(false);
-      print('[WS_ERROR] Connection failed: $e');
-      print('[WS_ERROR] URL: $_url');
-      print(
+      log('[WS_ERROR] Connection failed: $e');
+      log('[WS_ERROR] URL: $_url');
+      log(
         '[WS_ERROR] Check: 1) Robot is powered on, 2) Same WiFi network, 3) Correct IP address',
       );
 
@@ -124,7 +124,7 @@ class WebSocketService {
   ///
   /// Stops auto-reconnect attempts.
   Future<void> disconnect() async {
-    print('[WS_DISCONNECTED] Disconnecting from $_url');
+    log('[WS_DISCONNECTED] Disconnecting from $_url');
     _shouldReconnect = false;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
@@ -133,7 +133,7 @@ class WebSocketService {
     _channel = null;
     _isConnecting = false;
     _connectionController.add(false);
-    print('[WS_DISCONNECTED] Connection closed');
+    log('[WS_DISCONNECTED] Connection closed');
   }
 
   /// Sends a control message to the robot.
@@ -147,13 +147,13 @@ class WebSocketService {
   /// websocketService.sendMessage(message);
   /// ```
   void sendMessage(RobotControlMessage message) {
-    print(
+    log(
       '[WS_SEND] Connection status: isConnected=$isConnected, channel=${_channel != null ? "active" : "null"}',
     );
 
     if (!isConnected) {
-      print('[WS_SEND] ERROR - Cannot send message - not connected');
-      print(
+      log('[WS_SEND] ERROR - Cannot send message - not connected');
+      log(
         '[WS_SEND] Make sure connect() was called and connection is established',
       );
       return;
@@ -162,51 +162,51 @@ class WebSocketService {
     try {
       final jsonData = message.toJson();
       final jsonString = jsonEncode(jsonData);
-      print('[WS_SEND] Sending message type: ${message.messageType}');
-      print('[WS_SEND] Payload: $jsonString');
+      log('[WS_SEND] Sending message type: ${message.messageType}');
+      log('[WS_SEND] Payload: $jsonString');
       _channel!.sink.add(jsonString);
-      print('[WS_SEND] Message sent successfully');
+      log('[WS_SEND] Message sent successfully');
     } catch (e) {
-      print('[WS_ERROR] Send error: $e');
+      log('[WS_ERROR] Send error: $e');
     }
   }
 
   /// Handles incoming WebSocket messages.
   void _handleIncomingMessage(dynamic data) {
     try {
-      print('[WS_RECEIVE] Raw message: $data');
+      log('[WS_RECEIVE] Raw message: $data');
       final json = jsonDecode(data as String) as Map<String, dynamic>;
-      print('[WS_RECEIVE] Parsed JSON: $json');
+      log('[WS_RECEIVE] Parsed JSON: $json');
 
       final message = RobotStatusMessage.tryFromJson(json);
 
       if (message != null) {
-        print('[WS_RECEIVE] messageType: ${message.messageType}');
-        print('[WS_RECEIVE] timestamp: ${message.timestamp}');
-        print('[WS_RECEIVE] data fields: ${message.data.keys.toList()}');
+        log('[WS_RECEIVE] messageType: ${message.messageType}');
+        log('[WS_RECEIVE] timestamp: ${message.timestamp}');
+        log('[WS_RECEIVE] data fields: ${message.data.keys.toList()}');
         _messageController.add(message);
       } else {
-        print(
+        log(
           '[WS_RECEIVE] ERROR - Failed to parse message into RobotStatusMessage',
         );
-        print('[WS_RECEIVE] Raw data: $data');
+        log('[WS_RECEIVE] Raw data: $data');
       }
     } catch (e) {
-      print('[WS_ERROR] Message parsing error: $e');
-      print('[WS_ERROR] Raw data: $data');
+      log('[WS_ERROR] Message parsing error: $e');
+      log('[WS_ERROR] Raw data: $data');
     }
   }
 
   /// Handles WebSocket errors.
   void _handleError(dynamic error) {
-    print('[WS_ERROR] WebSocket error occurred: $error');
-    print('[WS_ERROR] Error type: ${error.runtimeType}');
+    log('[WS_ERROR] WebSocket error occurred: $error');
+    log('[WS_ERROR] Error type: ${error.runtimeType}');
     _connectionController.add(false);
   }
 
   /// Handles WebSocket disconnection.
   void _handleDisconnect() {
-    print('[WS_DISCONNECTED] Connection closed by remote or network issue');
+    log('[WS_DISCONNECTED] Connection closed by remote or network issue');
     _channel = null;
     _isConnecting = false;
     _connectionController.add(false);
@@ -221,7 +221,7 @@ class WebSocketService {
   void _scheduleReconnect() {
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 3), () {
-      print('[WS_CONNECT] Auto-reconnecting after 3 seconds...');
+      log('[WS_CONNECT] Auto-reconnecting after 3 seconds...');
       connect();
     });
   }
@@ -232,11 +232,11 @@ class WebSocketService {
   /// Increments reference count when a page starts using the service
   void retain() {
     _referenceCount++;
-    print('[WS_SINGLETON] Reference count increased: $_referenceCount');
+    log('[WS_SINGLETON] Reference count increased: $_referenceCount');
 
     // Auto-connect when first page uses the service
     if (_referenceCount == 1 && !isConnected && !_isConnecting) {
-      print('[WS_SINGLETON] First page using service - auto-connecting');
+      log('[WS_SINGLETON] First page using service - auto-connecting');
       connect();
     }
   }
@@ -244,11 +244,11 @@ class WebSocketService {
   /// Decrements reference count when a page stops using the service
   void release() {
     _referenceCount--;
-    print('[WS_SINGLETON] Reference count decreased: $_referenceCount');
+    log('[WS_SINGLETON] Reference count decreased: $_referenceCount');
 
     // Only disconnect if no pages are using the service
     if (_referenceCount <= 0) {
-      print('[WS_SINGLETON] No pages using service - disconnecting');
+      log('[WS_SINGLETON] No pages using service - disconnecting');
       _referenceCount = 0; // Prevent negative count
       disconnect();
     }
@@ -259,8 +259,8 @@ class WebSocketService {
   /// NOTE: With singleton pattern, this should rarely be called.
   /// Use retain()/release() instead for proper reference counting.
   void dispose() {
-    print('[WS_SINGLETON] WARNING - dispose() called on singleton');
-    print('[WS_SINGLETON] Consider using release() instead');
+    log('[WS_SINGLETON] WARNING - dispose() called on singleton');
+    log('[WS_SINGLETON] Consider using release() instead');
 
     // Only actually dispose if reference count is 0
     if (_referenceCount <= 0) {

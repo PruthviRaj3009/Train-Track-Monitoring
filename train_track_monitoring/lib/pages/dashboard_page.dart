@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:train_track_monitoring/models/robot_status_message.dart';
 import 'package:train_track_monitoring/services/websocket_service.dart';
@@ -45,24 +45,24 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
 
-    print('[DASHBOARD] Initializing dashboard page');
+    log('[DASHBOARD] Initializing dashboard page');
 
     // Retain reference to singleton WebSocket service
     _websocketService.retain();
 
     // Connect to WebSocket (will auto-connect if first page)
-    print('[DASHBOARD] Connecting to WebSocket for system_status messages');
-    print('[DASHBOARD] WebSocket connected: ${_websocketService.isConnected}');
+    log('[DASHBOARD] Connecting to WebSocket for system_status messages');
+    log('[DASHBOARD] WebSocket connected: ${_websocketService.isConnected}');
 
     // Listen to WebSocket system status messages
     _messageSubscription = _websocketService.messageStream.listen((message) {
-      print('[DASHBOARD] ✅ Received message type: ${message.messageType}');
-      print('[DASHBOARD] ✅ Raw data keys: ${message.data.keys.toList()}');
+      log('[DASHBOARD] ✅ Received message type: ${message.messageType}');
+      log('[DASHBOARD] ✅ Raw data keys: ${message.data.keys.toList()}');
       if (message.isSystemStatus) {
-        print('[DASHBOARD] ✅ Processing system_status message');
+        log('[DASHBOARD] ✅ Processing system_status message');
         _handleSystemStatusUpdate(message);
       } else {
-        print(
+        log(
           '[DASHBOARD] ⚠️ Ignoring non-system_status message: ${message.messageType}',
         );
       }
@@ -71,10 +71,10 @@ class _DashboardPageState extends State<DashboardPage> {
     // Set timeout: if no data received within 10 seconds, show error (increased from 5s)
     Future.delayed(const Duration(seconds: 10), () {
       if (mounted && _isLoading) {
-        print(
+        log(
           '[DASHBOARD] ⚠️ Timeout - no system_status data received within 10 seconds',
         );
-        print(
+        log(
           '[DASHBOARD] ⚠️ Check: 1) ESP32 sending system_status? 2) Correct messageType? 3) WebSocket connected?',
         );
         setState(() {
@@ -90,8 +90,8 @@ class _DashboardPageState extends State<DashboardPage> {
   void _handleSystemStatusUpdate(RobotStatusMessage message) {
     final data = message.data;
 
-    print('[DASHBOARD] ✅ Extracting system_status data from WebSocket message');
-    print(
+    log('[DASHBOARD] ✅ Extracting system_status data from WebSocket message');
+    log(
       '[DASHBOARD] ✅ Available fields in message.data: ${data.keys.toList()}',
     );
 
@@ -108,16 +108,16 @@ class _DashboardPageState extends State<DashboardPage> {
         data['currentTrackSection'] as String? ?? 'Unknown';
     final robotSpeedKmh = (data['robotSpeedKmh'] as num?)?.toDouble() ?? 0.0;
 
-    print('[DASHBOARD_UPDATE] ✅ Battery: $batteryPercentage%');
-    print('[DASHBOARD_UPDATE] ✅ Track Health: $trackHealthStatus');
-    print('[DASHBOARD_UPDATE] ✅ Device: $deviceStatus');
-    print(
+    log('[DASHBOARD_UPDATE] ✅ Battery: $batteryPercentage%');
+    log('[DASHBOARD_UPDATE] ✅ Track Health: $trackHealthStatus');
+    log('[DASHBOARD_UPDATE] ✅ Device: $deviceStatus');
+    log(
       '[DASHBOARD_UPDATE] ✅ Defects: Total=$totalDefectsDetected, Critical=$criticalDefectsCount',
     );
-    print(
+    log(
       '[DASHBOARD_UPDATE] ✅ Location: Section=$currentTrackSection, KM=$currentTrackKm',
     );
-    print('[DASHBOARD_UPDATE] ✅ Speed: $robotSpeedKmh km/h');
+    log('[DASHBOARD_UPDATE] ✅ Speed: $robotSpeedKmh km/h');
 
     // Convert string status to enum
     TrackHealthStatus trackHealth;
@@ -157,17 +157,17 @@ class _DashboardPageState extends State<DashboardPage> {
       );
     });
 
-    print(
+    log(
       '[DASHBOARD] ✅✅✅ setState() called - Dashboard UI updated with new system_status data',
     );
-    print(
+    log(
       '[DASHBOARD] ✅✅✅ UI should now show: Battery=$batteryPercentage%, Health=$trackHealth, Device=$device',
     );
   }
 
   @override
   void dispose() {
-    print('[DASHBOARD] Disposing dashboard page');
+    log('[DASHBOARD] Disposing dashboard page');
     _messageSubscription?.cancel();
     // Release reference (will only disconnect if no other pages using it)
     _websocketService.release();
@@ -189,7 +189,7 @@ class _DashboardPageState extends State<DashboardPage> {
       // If no message arrives within timeout, show error (increased to 10s)
       Future.delayed(const Duration(seconds: 10), () {
         if (mounted && _isLoading) {
-          print(
+          log(
             '[DASHBOARD] ⚠️ Manual refresh timeout - no system_status data received',
           );
           setState(() {

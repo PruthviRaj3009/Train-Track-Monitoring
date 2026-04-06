@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:train_track_monitoring/models/robot_control_message.dart';
 import 'package:train_track_monitoring/models/robot_status_message.dart';
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:train_track_monitoring/services/websocket_service.dart';
 
@@ -46,22 +47,22 @@ class _AlertsDefectLogPageState extends State<AlertsDefectLogPage> {
   void initState() {
     super.initState();
 
-    print('[ALERTS] Initializing alerts/defect log page');
+    log('[ALERTS] Initializing alerts/defect log page');
 
     // Retain reference to singleton WebSocket service
     _websocketService.retain();
 
     // Connect to WebSocket (will auto-connect if first page)
-    print('[ALERTS] Connecting to WebSocket for alert messages');
+    log('[ALERTS] Connecting to WebSocket for alert messages');
 
     // Listen to WebSocket alert messages
     _messageSubscription = _websocketService.messageStream.listen((message) {
-      print('[ALERTS] Received message type: ${message.messageType}');
+      log('[ALERTS] Received message type: ${message.messageType}');
       if (message.isAlert) {
-        print('[ALERTS] Processing alert message');
+        log('[ALERTS] Processing alert message');
         _handleNewAlert(message);
       } else {
-        print('[ALERTS] Ignoring non-alert message: ${message.messageType}');
+        log('[ALERTS] Ignoring non-alert message: ${message.messageType}');
       }
     });
   }
@@ -70,7 +71,7 @@ class _AlertsDefectLogPageState extends State<AlertsDefectLogPage> {
   void _handleNewAlert(RobotStatusMessage message) {
     final data = message.data;
 
-    print('[ALERTS] Extracting alert data from WebSocket message');
+    log('[ALERTS] Extracting alert data from WebSocket message');
 
     // Extract alert fields
     final alertId =
@@ -86,10 +87,10 @@ class _AlertsDefectLogPageState extends State<AlertsDefectLogPage> {
         data['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch;
     final locationStr = data['location'] as String?;
 
-    print(
+    log(
       '[ALERTS] Alert ID: $alertId, Type: $defectType, Severity: $severityStr',
     );
-    print('[ALERTS] Location: lat=$latitude, lon=$longitude');
+    log('[ALERTS] Location: lat=$latitude, lon=$longitude');
 
     // Convert severity string to enum
     AlertSeverity severity = AlertSeverity.normal;
@@ -124,21 +125,21 @@ class _AlertsDefectLogPageState extends State<AlertsDefectLogPage> {
       status: AlertStatus.pending,
     );
 
-    print(
+    log(
       '[ALERTS] New alert created: $defectType (${severity.toString().split('.').last})',
     );
 
     setState(() {
       _alerts.insert(0, newAlert); // Add to top of list
       _alerts.sort(_alertSort); // Re-sort by severity and time
-      print('[ALERTS] Alert added to list. Total alerts: ${_alerts.length}');
+      log('[ALERTS] Alert added to list. Total alerts: ${_alerts.length}');
     });
   }
 
   @override
   void dispose() {
-    print('[ALERTS] Disposing alerts/defect log page');
-    print('[ALERTS] Cancelling WebSocket subscription');
+    log('[ALERTS] Disposing alerts/defect log page');
+    log('[ALERTS] Cancelling WebSocket subscription');
     _messageSubscription?.cancel();
     // Release reference (will only disconnect if no other pages using it)
     _websocketService.release();
@@ -197,23 +198,23 @@ class _AlertsDefectLogPageState extends State<AlertsDefectLogPage> {
 
   void _acknowledge(AlertDefect alert) {
     if (alert.status == AlertStatus.acknowledged) {
-      print('[ALERTS] Alert ${alert.alertId} already acknowledged - skipping');
+      log('[ALERTS] Alert ${alert.alertId} already acknowledged - skipping');
       return;
     }
 
-    print('[ALERTS] Acknowledging alert: ${alert.alertId}');
+    log('[ALERTS] Acknowledging alert: ${alert.alertId}');
 
     // Send acknowledgment to robot via WebSocket
     final message = RobotControlMessage.alertAcknowledgment(
       alertId: alert.alertId,
     );
 
-    print('[ALERTS] Sending acknowledgment message to WebSocket');
+    log('[ALERTS] Sending acknowledgment message to WebSocket');
     _websocketService.sendMessage(message);
 
     setState(() {
       alert.status = AlertStatus.acknowledged;
-      print('[ALERTS] Alert ${alert.alertId} marked as acknowledged in UI');
+      log('[ALERTS] Alert ${alert.alertId} marked as acknowledged in UI');
     });
   }
 

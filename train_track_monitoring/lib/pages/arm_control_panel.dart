@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:train_track_monitoring/models/robot_control_message.dart';
 import 'package:train_track_monitoring/services/websocket_service.dart';
+import 'dart:developer';
 
 /// UI panel for controlling a robotic arm.
 ///
@@ -33,11 +34,11 @@ class _ArmControlPanelState extends State<ArmControlPanel> {
 
   /// Sends current servo positions to the robot via WebSocket.
   void _sendControlMessage() {
-    print('[CONTROL_TRIGGERED] Creating control message with values:');
-    print(
+    log('[CONTROL_TRIGGERED] Creating control message with values:');
+    log(
       '[CONTROL_TRIGGERED]   grip=$grip, wristPitch=$wristPitch, wristRoll=$wristRoll',
     );
-    print(
+    log(
       '[CONTROL_TRIGGERED]   elbow=$elbow, shoulder=$shoulder, waist=$waist, speed=$speed',
     );
 
@@ -51,19 +52,19 @@ class _ArmControlPanelState extends State<ArmControlPanel> {
       speed: speed,
     );
 
-    print('[CONTROL_TRIGGERED] Sending control message to WebSocket');
+    log('[CONTROL_TRIGGERED] Sending control message to WebSocket');
     widget.websocketService.sendMessage(message);
   }
 
   /// Sends a movement command to the robot.
   void _sendMovementCommand(String command) {
-    print(
+    log(
       '[CONTROL_TRIGGERED] Movement button pressed: ${command.toUpperCase()}',
     );
 
     final message = RobotControlMessage.movement(command);
 
-    print('[CONTROL_TRIGGERED] Sending movement command to WebSocket');
+    log('[CONTROL_TRIGGERED] Sending movement command to WebSocket');
     widget.websocketService.sendMessage(message);
   }
 
@@ -219,41 +220,39 @@ class _ArmControlPanelState extends State<ArmControlPanel> {
         // Local state management: each slider commits its value with setState
         // and sends WebSocket message on change end.
         buildSlider("Grip", grip, (v) {
-          print('[CONTROL_TRIGGERED] Grip slider released - new value: $v');
+          log('[CONTROL_TRIGGERED] Grip slider released - new value: $v');
           setState(() => grip = v);
           _sendControlMessage();
         }),
         buildSlider("Wrist Pitch", wristPitch, (v) {
-          print(
+          log(
             '[CONTROL_TRIGGERED] Wrist Pitch slider released - new value: $v',
           );
           setState(() => wristPitch = v);
           _sendControlMessage();
         }),
         buildSlider("Wrist Roll", wristRoll, (v) {
-          print(
-            '[CONTROL_TRIGGERED] Wrist Roll slider released - new value: $v',
-          );
+          log('[CONTROL_TRIGGERED] Wrist Roll slider released - new value: $v');
           setState(() => wristRoll = v);
           _sendControlMessage();
         }),
         buildSlider("Elbow", elbow, (v) {
-          print('[CONTROL_TRIGGERED] Elbow slider released - new value: $v');
+          log('[CONTROL_TRIGGERED] Elbow slider released - new value: $v');
           setState(() => elbow = v);
           _sendControlMessage();
         }),
         buildSlider("Shoulder", shoulder, (v) {
-          print('[CONTROL_TRIGGERED] Shoulder slider released - new value: $v');
+          log('[CONTROL_TRIGGERED] Shoulder slider released - new value: $v');
           setState(() => shoulder = v);
           _sendControlMessage();
         }),
         buildSlider("Waist", waist, (v) {
-          print('[CONTROL_TRIGGERED] Waist slider released - new value: $v');
+          log('[CONTROL_TRIGGERED] Waist slider released - new value: $v');
           setState(() => waist = v);
           _sendControlMessage();
         }),
         buildSlider("Speed", speed, (v) {
-          print('[CONTROL_TRIGGERED] Speed slider released - new value: $v');
+          log('[CONTROL_TRIGGERED] Speed slider released - new value: $v');
           setState(() => speed = v);
           _sendControlMessage();
         }, color: Colors.red),

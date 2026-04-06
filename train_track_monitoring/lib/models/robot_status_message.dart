@@ -1,5 +1,7 @@
 /// Model for incoming status messages received from the robot.
 ///
+import 'dart:developer';
+
 /// Supports multiple message types:
 /// - "telemetry": Real-time sensor data
 /// - "system_status": System health and diagnostics
@@ -25,35 +27,37 @@ class RobotStatusMessage {
     try {
       final messageType = json['messageType'] as String;
       final timestamp = json['timestamp'] as int;
-      
+
       // Extract nested data based on messageType
       Map<String, dynamic> extractedData;
-      
+
       if (messageType == 'system_status') {
         extractedData = json['system'] as Map<String, dynamic>? ?? {};
-        print('[WS_PARSE] messageType: $messageType');
-        print('[WS_PARSE] extracted data keys: ${extractedData.keys.toList()}');
+        log('[WS_PARSE] messageType: $messageType');
+        log('[WS_PARSE] extracted data keys: ${extractedData.keys.toList()}');
       } else if (messageType == 'telemetry') {
         extractedData = json['telemetry'] as Map<String, dynamic>? ?? {};
-        print('[WS_PARSE] messageType: $messageType');
-        print('[WS_PARSE] extracted data keys: ${extractedData.keys.toList()}');
+        log('[WS_PARSE] messageType: $messageType');
+        log('[WS_PARSE] extracted data keys: ${extractedData.keys.toList()}');
       } else if (messageType == 'alert') {
         extractedData = json['alert'] as Map<String, dynamic>? ?? {};
-        print('[WS_PARSE] messageType: $messageType');
-        print('[WS_PARSE] extracted data keys: ${extractedData.keys.toList()}');
+        log('[WS_PARSE] messageType: $messageType');
+        log('[WS_PARSE] extracted data keys: ${extractedData.keys.toList()}');
       } else {
         // Fallback: use entire json for unknown message types
         extractedData = json;
-        print('[WS_PARSE] ⚠️ Unknown messageType: $messageType - using full JSON');
+        log(
+          '[WS_PARSE] ⚠️ Unknown messageType: $messageType - using full JSON',
+        );
       }
-      
+
       return RobotStatusMessage(
         messageType: messageType,
         timestamp: timestamp,
         data: extractedData,
       );
     } catch (e) {
-      print('[WS_PARSE] ❌ JSON parsing failed: $e');
+      log('[WS_PARSE] ❌ JSON parsing failed: $e');
       throw FormatException('Invalid RobotStatusMessage JSON: $e');
     }
   }
@@ -167,7 +171,8 @@ class AlertData {
       description: data['description'] as String? ?? '',
       latitude: (data['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (data['longitude'] as num?)?.toDouble() ?? 0.0,
-      timestamp: data['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch,
+      timestamp:
+          data['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch,
     );
   }
 }

@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:train_track_monitoring/models/robot_status_message.dart';
@@ -78,85 +78,85 @@ class _LiveTrackMonitoringPageState extends State<LiveTrackMonitoringPage> {
   void initState() {
     super.initState();
 
-    print('[LIVE_TRACK] Initializing live track monitoring page');
+    log('[LIVE_TRACK] Initializing live track monitoring page');
 
     // Retain reference to singleton WebSocket service
     _websocketService.retain();
 
     // Connect to WebSocket (will auto-connect if first page)
-    print('[LIVE_TRACK] Connecting to WebSocket for telemetry messages');
+    log('[LIVE_TRACK] Connecting to WebSocket for telemetry messages');
 
     // Listen to WebSocket telemetry messages
     _wsSubscription = _websocketService.messageStream.listen((message) {
-      print('[LIVE_TRACK] Received message type: ${message.messageType}');
+      log('[LIVE_TRACK] Received message type: ${message.messageType}');
       if (message.isTelemetry) {
-        print('[LIVE_TRACK] Processing telemetry message');
+        log('[LIVE_TRACK] Processing telemetry message');
         _handleTelemetryUpdate(message);
       } else {
-        print(
+        log(
           '[LIVE_TRACK] Ignoring non-telemetry message: ${message.messageType}',
         );
       }
     });
 
     // Start GPS location stream
-    print('[LIVE_TRACK] Starting GPS location stream');
+    log('[LIVE_TRACK] Starting GPS location stream');
     _startGPSStream();
   }
 
   /// Starts the GPS location stream using Geolocator
   Future<void> _startGPSStream() async {
-    print('[GPS] Checking location services...');
+    log('[GPS] Checking location services...');
 
     // Check if location services are enabled
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      print('[GPS] ERROR - Location services are disabled');
-      print('[GPS] Please enable location services in device settings');
+      log('[GPS] ERROR - Location services are disabled');
+      log('[GPS] Please enable location services in device settings');
       return;
     }
-    print('[GPS] Location services enabled ✓');
+    log('[GPS] Location services enabled ✓');
 
     // Check location permission
-    print('[GPS] Checking location permissions...');
+    log('[GPS] Checking location permissions...');
     LocationPermission permission = await Geolocator.checkPermission();
-    print('[GPS] Current permission: $permission');
+    log('[GPS] Current permission: $permission');
 
     if (permission == LocationPermission.denied) {
-      print('[GPS] Permission denied - requesting permission...');
+      log('[GPS] Permission denied - requesting permission...');
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        print('[GPS] ERROR - Permission denied by user');
+        log('[GPS] ERROR - Permission denied by user');
         return;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      print(
+      log(
         '[GPS] ERROR - Permission denied forever - user must enable in settings',
       );
       return;
     }
 
-    print('[GPS] Location permission granted ✓');
+    log('[GPS] Location permission granted ✓');
 
     // Get initial position
     try {
-      print('[GPS] Getting initial position...');
+      log('[GPS] Getting initial position...');
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-      print(
+      log(
         '[GPS] Initial position: lat=${position.latitude}, lon=${position.longitude}',
       );
       _updateGPSPosition(position);
     } catch (e) {
-      print('[GPS] ERROR getting initial position: $e');
+      log('[GPS] ERROR getting initial position: $e');
       // Ignore errors, will retry with stream
     }
 
     // Start position stream
-    print('[GPS] Starting continuous position stream (updates every 4 meters)');
+    log('[GPS] Starting continuous position stream (updates every 4 meters)');
     const locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
       distanceFilter: 4, // Update every 4 meters
@@ -166,15 +166,15 @@ class _LiveTrackMonitoringPageState extends State<LiveTrackMonitoringPage> {
       locationSettings: locationSettings,
     ).listen(_updateGPSPosition);
 
-    print('[GPS] GPS stream active ✓');
+    log('[GPS] GPS stream active ✓');
   }
 
   /// Updates GPS position and rebuilds metrics
   void _updateGPSPosition(Position position) {
-    print(
+    log(
       '[GPS] Position update: lat=${position.latitude.toStringAsFixed(6)}, lon=${position.longitude.toStringAsFixed(6)}',
     );
-    print('[GPS] Accuracy: ${position.accuracy}m, Speed: ${position.speed}m/s');
+    log('[GPS] Accuracy: ${position.accuracy}m, Speed: ${position.speed}m/s');
 
     setState(() {
       _gpsLatitude = position.latitude;
@@ -187,7 +187,7 @@ class _LiveTrackMonitoringPageState extends State<LiveTrackMonitoringPage> {
   void _handleTelemetryUpdate(RobotStatusMessage message) {
     final data = message.data;
 
-    print('[LIVE_TRACK] Extracting telemetry data from WebSocket');
+    log('[LIVE_TRACK] Extracting telemetry data from WebSocket');
 
     // Extract telemetry fields
     _vibrationLevel = (data['vibrationLevelMmPerS'] as num?)?.toDouble() ?? 0.0;
@@ -200,13 +200,13 @@ class _LiveTrackMonitoringPageState extends State<LiveTrackMonitoringPage> {
         (data['distanceTravelledKm'] as num?)?.toDouble() ?? 0.0;
     _robotSpeed = (data['robotSpeedKmh'] as num?)?.toDouble() ?? 0.0;
 
-    print(
+    log(
       '[LIVE_TRACK] Telemetry: vibration=${_vibrationLevel}mm/s, shock=$_shockImpactCount, tilt=${_trackTiltAngle}°',
     );
-    print(
+    log(
       '[LIVE_TRACK] Telemetry: temp=${_railTemperature}°C, humidity=${_ambientHumidity}%, light=${_lightLux}lux',
     );
-    print(
+    log(
       '[LIVE_TRACK] Telemetry: distance=${_distanceTravelled}km, speed=${_robotSpeed}km/h',
     );
 
@@ -225,11 +225,11 @@ class _LiveTrackMonitoringPageState extends State<LiveTrackMonitoringPage> {
       condition = TrackCondition.warning;
     }
 
-    print('[LIVE_TRACK] Combining WebSocket telemetry + GPS data');
-    print(
+    log('[LIVE_TRACK] Combining WebSocket telemetry + GPS data');
+    log(
       '[LIVE_TRACK] Track condition: $condition (vibration=${_vibrationLevel}mm/s)',
     );
-    print(
+    log(
       '[LIVE_TRACK] GPS coordinates: (${_gpsLatitude.toStringAsFixed(6)}, ${_gpsLongitude.toStringAsFixed(6)})',
     );
 
@@ -248,15 +248,15 @@ class _LiveTrackMonitoringPageState extends State<LiveTrackMonitoringPage> {
       condition: condition,
     );
 
-    print('[LIVE_TRACK] Metrics updated and UI refreshed');
+    log('[LIVE_TRACK] Metrics updated and UI refreshed');
   }
 
   @override
   void dispose() {
-    print('[LIVE_TRACK] Disposing live track monitoring page');
-    print('[LIVE_TRACK] Cancelling WebSocket subscription');
+    log('[LIVE_TRACK] Disposing live track monitoring page');
+    log('[LIVE_TRACK] Cancelling WebSocket subscription');
     _wsSubscription?.cancel();
-    print('[LIVE_TRACK] Cancelling GPS subscription');
+    log('[LIVE_TRACK] Cancelling GPS subscription');
     _gpsSubscription?.cancel();
     // Release reference (will only disconnect if no other pages using it)
     _websocketService.release();
